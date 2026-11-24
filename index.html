@@ -218,8 +218,8 @@ button.danger{color:var(--red);border-color:var(--red);background:transparent}
 <script>
 {
 /* ======== KONFIGURASI — isi dari Supabase: Project Settings > API ======== */
-const SUPABASE_URL='GANTI_DENGAN_PROJECT_URL';
-const SUPABASE_ANON_KEY='GANTI_DENGAN_ANON_PUBLIC_KEY';
+const SUPABASE_URL='https://vfzttoulvkqcdimodiuh.supabase.co';
+const SUPABASE_ANON_KEY='TEMPEL_ANON_KEY_DI_SINI';
 /* ======================================================================== */
 
 const $=id=>document.getElementById(id);
@@ -244,7 +244,7 @@ $('toastUndo').onclick=async()=>{const f=undoFn;undoFn=null;$('toast').style.dis
 function fail(e){console.error(e);const m=String(e?.message||'');toast(/row-level|permission|policy/i.test(m)?'Peran Anda tidak mengizinkan perubahan ini.':/foreign key/i.test(m)?'Data ini masih dipakai oleh data lain.':'Gagal menyimpan: '+(m||'coba lagi.'))}
 
 /* ---------- koneksi ---------- */
-const configured=!/GANTI_/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
+const configured=!/GANTI_|TEMPEL_/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
 const sb=configured&&window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 const ok=r=>{if(r.error)throw r.error;return r.data};
 async function fetchAll(t,order){let out=[],from=0;for(;;){const d=ok(await sb.from(t).select('*').order(order).range(from,from+999));out=out.concat(d);if(d.length<1000)return out;from+=1000}}
