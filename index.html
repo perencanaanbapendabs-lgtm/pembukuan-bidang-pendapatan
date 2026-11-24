@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pembukuan Bidang Pendapatan</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: buku pembantu realisasi yang rapi — tenang, angka dulu, siap dilaporkan.
+   IDEA: Laporan Realisasi Anggaran per sub kegiatan & kode rekening, hidup dan bersama.
+   PICTURE: baris serapan per sub kegiatan dengan penanda target anggaran kas + kurva kumulatif.
+   COLOUR and TYPE: putih, tinta #121212, merah #e3120b untuk peringatan, slate #2e6f8e; Source Serif 4 + Inter.
+   LAYOUT: tab merah kiri atas, judul temuan lebar penuh, panel dibatasi garis. */
+:root{color-scheme:light dark;--bg:light-dark(#fff,#10191e);--ink:light-dark(#121212,#e9eff2);--mute:light-dark(#56616a,#9fb0ba);--red:light-dark(#e3120b,#ff5a4e);--slate:light-dark(#2e6f8e,#71b6d6);--panel:light-dark(#e3ecf0,#182730);--rule:light-dark(#d3dce1,#2a3b45);--field:light-dark(#fff,#0d151a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(5vw,16px);max-width:1240px;margin:0 auto}
+.fig{position:relative;min-height:300px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+pre,.scroll{overflow-x:auto}.scroll a{flex:none}html{scroll-padding-top:72px}
+h1,h2{font-family:"Source Serif 4",Georgia,serif;font-weight:600;line-height:1.08;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4.2vw,44px)}h2{font-size:22px;margin:0 0 12px}h3{font-size:16px;margin:18px 0 6px}
+.tab{display:inline-block;background:var(--red);color:#fff;font-weight:600;font-size:13px;padding:4px 10px;margin-bottom:14px}
+.head{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:end;justify-content:space-between}
+.sub{color:var(--mute);margin:10px 0 0;max-width:72ch}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+nav{display:flex;gap:2px;border-bottom:2px solid var(--ink);margin-top:22px}
+nav a{padding:10px 14px;color:var(--mute);text-decoration:none;font-weight:600;border-bottom:4px solid transparent;margin-bottom:-2px;min-height:44px;white-space:nowrap}
+nav a.on{color:var(--ink);border-color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.kpi{padding:16px 18px 16px 0}.kpi+.kpi{border-left:1px solid var(--rule);padding-left:18px}
+.kpi b{display:block;font-size:clamp(21px,2.5vw,29px);font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi span{color:var(--mute);font-size:14px}.kpi small{display:block;color:var(--mute);font-size:13px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:32px;margin-top:28px}
+.panel{background:var(--panel);padding:20px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.row .nm{font-weight:600}.row .pc{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.row .meta{grid-column:1/-1;color:var(--mute);font-size:13px;display:flex;flex-wrap:wrap;gap:2px 14px}
+.bar{grid-column:1/-1;height:12px;background:var(--rule);position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--slate)}.bar.over i{background:var(--red)}
+.bar em{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mute);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:13px;color:var(--mute);font-weight:600;border-bottom:2px solid var(--ink);padding:8px 8px 6px 0;vertical-align:bottom}
+td{border-bottom:1px solid var(--rule);padding:8px 8px 8px 0;vertical-align:top}
+tr.grp td{background:var(--panel);font-weight:600;padding-left:8px}
+tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.muted{color:var(--mute)}.small{font-size:13px}.red{color:var(--red)}
+form.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px 16px;align-items:end}
+label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--mute)}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--rule);padding:9px 10px;min-height:44px;width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--slate);outline-offset:2px}
+.wide{grid-column:1/-1}.span2{grid-column:span 2}
+button{font:inherit;font-weight:600;min-height:44px;padding:0 18px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+button.sm{min-height:36px;padding:0 10px;font-size:14px}
+button.danger{color:var(--red);border-color:var(--red);background:transparent}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:22px 0 12px}
+.tools label{flex:1 1 160px}
+.warn{color:var(--red);font-size:14px;font-weight:600}
+.empty{padding:24px 0;color:var(--mute)}
+.mgrid input{min-height:36px;padding:6px;font-size:14px;text-align:right;min-width:84px}
+.mgrid td{padding:4px 4px 4px 0}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;display:none;gap:14px;align-items:center;z-index:9;max-width:92vw}
+#toast button{min-height:36px;background:transparent;color:var(--bg);border-color:var(--bg)}
+.view[hidden]{display:none}
+.status{font-size:13px;color:var(--mute)}.status b{color:var(--ink)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border:1px solid currentColor}
+@media(max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}.span2{grid-column:auto}}
+@media(max-width:600px){.kpi+.kpi{border-left:0;padding-left:0}.kpi{border-bottom:1px solid var(--rule)}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--rule)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}.acts{justify-content:flex-start}}
+@media(prefers-reduced-motion:no-preference){.bar i{transition:width .5s ease}}
+.gate{min-height:80vh;display:grid;place-items:center;padding:24px}
+.gate .box{width:min(440px,100%)}
+.gate h1{font-size:clamp(28px,5vw,38px);margin-bottom:8px}
+.gate form{display:grid;gap:12px;margin-top:20px}
+.linkbtn{background:none;border:0;color:var(--slate);padding:0;min-height:auto;font-weight:600;text-decoration:underline;cursor:pointer}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+</style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<!-- ============ Layar masuk ============ -->
+<div class="gate" id="gate" hidden>
+  <div class="box">
+    <span class="tab">Bapenda · Bidang Pendapatan</span>
+    <h1>Pembukuan Bidang Pendapatan</h1>
+    <p class="muted" id="gateMsg">Masuk untuk memantau dan mencatat realisasi anggaran.</p>
+    <form id="authForm" autocomplete="on">
+      <label>Email<input type="email" id="a_email" required autocomplete="username"></label>
+      <label id="pwWrap">Kata sandi<input type="password" id="a_pw" required minlength="8" autocomplete="current-password"></label>
+      <button type="submit" id="authBtn">Masuk</button>
+      <div class="small" id="authAlt">Belum punya akun? <button type="button" class="linkbtn" id="toReg">Daftar</button> · <button type="button" class="linkbtn" id="toReset">Lupa kata sandi</button></div>
+      <div class="warn" id="authErr"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ Aplikasi ============ -->
+<div id="app" hidden>
+<header class="band" style="padding-bottom:0">
+  <div class="head" style="align-items:center;margin-bottom:6px"><span class="tab" id="orgTab" style="margin:0">Pembukuan Bidang Pendapatan</span><div class="who"><span id="whoami"></span><button class="ghost sm" id="logout" type="button">Keluar</button></div></div>
+  <div class="head" style="margin-top:10px">
+    <div>
+      <h1 id="headline">Memuat data anggaran…</h1>
+      <p class="sub" id="subline"></p>
+    </div>
+    <div style="display:grid;gap:6px">
+      <label>Bulan laporan<select id="bulan"></select></label>
+      <div class="status" id="status">Menghubungkan…</div>
+    </div>
+  </div>
+  <nav class="scroll" aria-label="Menu">
+    <a href="#dasbor" data-v="dasbor">Dasbor</a>
+    <a href="#realisasi" data-v="realisasi">Buku Realisasi</a>
+    <a href="#dpa" data-v="dpa">DPA &amp; Pagu</a>
+    <a href="#target" data-v="target">Target &amp; Fisik</a>
+    <a href="#laporan" data-v="laporan">Laporan Bulanan</a>
+    <a href="#pengguna" data-v="pengguna" id="navUsers" hidden>Pengguna</a>
+  </nav>
+</header>
+
+<main>
+<section class="view band" id="v-dasbor">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid2">
+    <div>
+      <h2>Serapan per sub kegiatan</h2>
+      <div id="rows"></div>
+      <div class="legend"><span><i style="background:var(--slate);height:8px"></i>Realisasi s.d. bulan laporan</span><span><i style="background:var(--ink);width:2px;height:12px"></i>Target anggaran kas kumulatif</span></div>
+      <h3>Per sumber dana</h3>
+      <div id="dana"></div>
+    </div>
+    <div class="panel">
+      <h2>Realisasi kumulatif vs target kas</h2>
+      <div class="fig" id="fig"><svg id="chart" role="img" aria-label="Grafik realisasi kumulatif dan target anggaran kas per bulan"></svg></div>
+      <div class="legend"><span><i style="background:var(--slate)"></i>Realisasi kumulatif</span><span><i style="background:var(--mute)"></i>Target kas kumulatif</span><span><i style="background:var(--red)"></i>Total pagu</span></div>
+    </div>
+  </div>
+  <h2 style="margin-top:32px">Transaksi terbaru</h2>
+  <div id="recent"></div>
+</section>
+
+<section class="view band" id="v-realisasi" hidden>
+  <div id="txWrap" class="panel">
+    <h2 id="txTitle">Catat SP2D / SPJ</h2>
+    <form class="f" id="txForm" autocomplete="off">
+      <label>Tanggal<input type="date" id="t_tgl" required></label>
+      <label>No. SP2D / bukti<input id="t_bukti" required placeholder="mis. 0123/SP2D-GU/2027"></label>
+      <label>Jenis<select id="t_jenis"><option>GU</option><option>LS</option><option>TU</option><option>UP</option></select></label>
+      <label>Sub kegiatan<select id="t_sub" required></select></label>
+      <label class="span2">Kode rekening / paket<select id="t_dpa" required></select></label>
+      <label class="span2">Uraian belanja<input id="t_ur" required placeholder="Keterangan belanja"></label>
+      <label>Penerima / pihak ketiga<input id="t_pen"></label>
+      <label>Jumlah (Rp)<input id="t_jml" inputmode="numeric" required placeholder="0"></label>
+      <div class="acts" style="justify-content:flex-start"><button type="submit" id="txSave">Simpan</button><button type="button" class="ghost" id="txCancel" hidden>Batal</button></div>
+      <div class="wide small" id="txInfo"></div>
+    </form>
+  </div>
+  <div class="tools">
+    <label>Cari<input id="q" placeholder="Uraian, no. bukti, penerima"></label>
+    <label>Sub kegiatan<select id="fSub"></select></label>
+    <label>Bulan<select id="fBln"></select></label>
+    <button class="ghost" id="copyTx" type="button">Salin CSV</button>
+  </div>
+  <div id="txTable"></div>
+</section>
+
+<section class="view band" id="v-dpa" hidden>
+  <div id="dpaWrap" class="panel" hidden>
+    <h2 id="dpaTitle">Tambah baris DPA</h2>
+    <form class="f" id="dpaForm" autocomplete="off">
+      <label>Sub kegiatan<select id="d_sub" required></select></label>
+      <label>Kode rekening<input id="d_rek" required placeholder="5.1.02.01.001.00024"></label>
+      <label class="span2">Uraian rekening<input id="d_ur" required></label>
+      <label class="span2">Rincian / paket belanja<input id="d_rin"></label>
+      <label>Sumber dana<select id="d_dana"><option>PAD</option><option>DAU</option><option>DAK</option><option>Lainnya</option></select></label>
+      <label>Pagu (Rp)<input id="d_pagu" inputmode="numeric" required></label>
+      <div class="acts" style="justify-content:flex-start"><button type="submit">Simpan</button><button type="button" class="ghost" id="dpaCancel" hidden>Batal</button></div>
+    </form>
+  </div>
+  <div class="tools"><span class="small muted" style="flex:1">Pagu per sub kegiatan dan kode rekening, dengan realisasi s.d. bulan laporan.</span><button class="ghost" id="copyDpa" type="button">Salin CSV</button></div>
+  <div id="dpaTable"></div>
+</section>
+
+<section class="view band" id="v-target" hidden>
+  <h2>A. Target realisasi keuangan (anggaran kas) per bulan</h2>
+  <p class="small muted" id="kasNote"></p>
+  <div id="kasGrid"></div>
+  <h2 style="margin-top:32px">B. Realisasi keluaran kumulatif</h2>
+  <p class="small muted">Jumlah dokumen/laporan yang sudah selesai s.d. akhir bulan.</p>
+  <div id="outGrid"></div>
+  <h2 style="margin-top:32px">C. Realisasi fisik kumulatif (%)</h2>
+  <p class="small muted">Persentase kemajuan pekerjaan s.d. akhir bulan, dinilai dari bukti output.</p>
+  <div id="fisGrid"></div>
+</section>
+
+<section class="view band" id="v-laporan" hidden>
+  <div class="tools"><span class="small muted" style="flex:1" id="lapNote"></span><button class="ghost" id="copyLap" type="button">Salin CSV</button></div>
+  <div id="lapTable"></div>
+</section>
+
+<section class="view band" id="v-pengguna" hidden>
+  <h2>Pengguna &amp; peran</h2>
+  <p class="small muted">Orang yang baru mendaftar berstatus <b>Menunggu</b> dan belum bisa melihat data sampai Anda memberi peran. <b>Pencatat</b> mencatat realisasi dan capaian fisik; <b>Pemantau</b> hanya melihat; <b>Admin</b> juga mengubah DPA, target kas, dan pengguna.</p>
+  <div id="userTable"></div>
+</section>
+</main>
+</div>
+<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo" type="button" hidden>Batalkan</button></div>
+
+<script>
+{
+/* ======== KONFIGURASI — isi dari Supabase: Project Settings > API ======== */
+const SUPABASE_URL='GANTI_DENGAN_PROJECT_URL';
+const SUPABASE_ANON_KEY='GANTI_DENGAN_ANON_PUBLIC_KEY';
+/* ======================================================================== */
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf=new Intl.NumberFormat('id-ID');
+const rp=n=>'Rp '+nf.format(Math.round(n||0));
+const N=n=>nf.format(Math.round(n||0));
+const short=n=>{const a=Math.abs(n);return a>=1e9?(n/1e9).toLocaleString('id-ID',{maximumFractionDigits:2})+' M':a>=1e6?(n/1e6).toLocaleString('id-ID',{maximumFractionDigits:1})+' jt':nf.format(Math.round(n))};
+const pct=(a,b)=>b>0?a/b*100:0;
+const pf=n=>n.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
+const digits=s=>Number(String(s).replace(/\D/g,''))||0;
+const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const BLNF=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const PERAN={admin:'Admin',pencatat:'Pencatat',pemantau:'Pemantau',menunggu:'Menunggu'};
+const sum=a=>a.reduce((s,v)=>s+(Number(v)||0),0);
+const now=new Date();
+let CFG={tahun:2027},S=[],D=[],R=[],C={},U=[],me=null,role='menunggu',canWrite=false,isAdmin=false,bulan=1,editTx=null,editD=null,loaded=false,bulanSet=false;
+
+let toastT,undoFn=null;
+function toast(msg,undo){$('toastMsg').textContent=msg;undoFn=undo||null;$('toastUndo').hidden=!undo;$('toast').style.display='flex';clearTimeout(toastT);toastT=setTimeout(()=>{$('toast').style.display='none';undoFn=null},6000)}
+$('toastUndo').onclick=async()=>{const f=undoFn;undoFn=null;$('toast').style.display='none';if(f)try{await f()}catch(e){fail(e)}};
+function fail(e){console.error(e);const m=String(e?.message||'');toast(/row-level|permission|policy/i.test(m)?'Peran Anda tidak mengizinkan perubahan ini.':/foreign key/i.test(m)?'Data ini masih dipakai oleh data lain.':'Gagal menyimpan: '+(m||'coba lagi.'))}
+
+/* ---------- koneksi ---------- */
+const configured=!/GANTI_/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
+const sb=configured&&window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+const ok=r=>{if(r.error)throw r.error;return r.data};
+async function fetchAll(t,order){let out=[],from=0;for(;;){const d=ok(await sb.from(t).select('*').order(order).range(from,from+999));out=out.concat(d);if(d.length<1000)return out;from+=1000}}
+async function load(){
+  const [cfg,s,d,r,c]=await Promise.all([sb.from('pengaturan').select('*').maybeSingle().then(ok),fetchAll('sub_kegiatan','kode'),fetchAll('dpa','id'),fetchAll('realisasi','dibuat'),fetchAll('capaian','sub')]);
+  if(cfg)CFG=cfg;S=s;D=d;R=r;C=Object.fromEntries(c.map(x=>[x.sub,x]));
+  if(isAdmin)U=ok(await sb.from('pengguna').select('*').order('dibuat'));
+  if(!bulanSet){const y=Number(CFG.tahun);bulan=y===now.getFullYear()?now.getMonth()+1:y<now.getFullYear()?12:1;bulanSet=true;$('t_tgl').value=defDate()}
+  loaded=true;render();
+}
+let lt;const reload=()=>{clearTimeout(lt);lt=setTimeout(()=>load().catch(e=>{$('status').textContent='Gagal memuat data: '+(e.message||e)}),300)};
+const save={
+  realisasi:(id,d)=>id?sb.from('realisasi').upsert({id,...d}).then(ok):sb.from('realisasi').insert(d).then(ok),
+  dpa:(id,d)=>sb.from('dpa').upsert(id?{id,...d}:d).then(ok),
+};
+async function del(t,id){ok(await sb.from(t).delete().eq('id',id));reload()}
+
+/* ---------- turunan ---------- */
+const subs=()=>S.slice().sort((a,b)=>String(a.kode).localeCompare(String(b.kode),'id',{numeric:true}));
+const dpaOf=sid=>D.filter(d=>d.sub===sid).sort((a,b)=>String(a.rek).localeCompare(String(b.rek),'id',{numeric:true}));
+const subById=id=>S.find(s=>s.id===id);const dpaById=id=>D.find(d=>d.id===id);
+const mOf=t=>Number(String(t.tanggal).slice(5,7));
+const txs=()=>R.filter(t=>String(t.tanggal).slice(0,4)===String(CFG.tahun));
+function realDpa(m){const o={};for(const t of txs())if(mOf(t)<=m)o[t.dpa]=(o[t.dpa]||0)+(Number(t.jumlah)||0);return o}
+const paguSub=s=>sum(dpaOf(s.id).map(d=>d.pagu));
+const kasCum=(s,m)=>sum((s.kas||[]).slice(0,m));
+const subName=s=>s?(s.singkat||s.nama):'(terhapus)';
+const byNew=(a,b)=>String(b.tanggal).localeCompare(String(a.tanggal))||String(b.dibuat).localeCompare(String(a.dibuat));
+
+/* ---------- render ---------- */
+function render(){
+  if(CFG.perangkat)$('orgTab').textContent='Pembukuan Bidang Pendapatan · '+CFG.perangkat;
+  renderBulan();
+  const ss=subs(),rd=realDpa(bulan),pagu=sum(D.map(d=>d.pagu)),real=sum(Object.values(rd)),kas=sum(ss.map(s=>kasCum(s,bulan))),p=pct(real,pagu);
+  if(!loaded){}else if(!D.length){$('headline').textContent='DPA tahun '+CFG.tahun+' belum diisi';$('subline').textContent='Isi pagu per sub kegiatan dan kode rekening di menu DPA & Pagu.'}
+  else{
+    $('headline').textContent='Realisasi TA '+CFG.tahun+' s.d. '+BLNF[bulan-1]+': '+pf(p)+' dari pagu '+short(pagu);
+    const dev=real-kas;
+    let s=(CFG.bidang?CFG.bidang+'. ':'')+'Target anggaran kas s.d. '+BLNF[bulan-1]+' '+rp(kas)+' ('+pf(pct(kas,pagu))+'); ';
+    s+=Math.abs(dev)<1?'realisasi tepat sesuai target.':dev<0?'realisasi tertinggal '+rp(-dev)+'.':'realisasi melampaui target '+rp(dev)+'.';
+    const over=D.filter(d=>(rd[d.id]||0)>(Number(d.pagu)||0));if(over.length)s+=' '+over.length+' kode rekening melebihi pagu.';
+    $('subline').textContent=s;
+  }
+  $('kpis').innerHTML=[['Total pagu',rp(pagu),D.length+' kode rekening'],['Realisasi s.d. '+BLN[bulan-1],rp(real),txs().filter(t=>mOf(t)<=bulan).length+' transaksi'],['Sisa anggaran',rp(pagu-real),pf(100-p)+' belum terserap'],['Capaian vs target kas',pf(pct(real,kas)),'target '+rp(kas)]]
+    .map(([l,v,x])=>`<div class="kpi"><span>${esc(l)}</span><b>${esc(v)}</b><small>${esc(x)}</small></div>`).join('');
+  $('rows').innerHTML=ss.length?ss.map(s=>{const pg=paguSub(s),r=sum(dpaOf(s.id).map(d=>rd[d.id]||0)),q=pct(r,pg),k=pct(kasCum(s,bulan),pg),f=(C[s.id]?.fisik||[])[bulan-1];
+    return `<div class="row"><span class="nm">${esc(s.singkat||s.nama)} <span class="muted small">${esc(s.kode)}</span></span><span class="pc${q>100?' red':''}">${pf(q)}</span>
+    <div class="bar${q>100?' over':''}"><i style="width:${Math.min(q,100)}%"></i><em style="left:calc(${Math.min(k,100)}% - 1px)"></em></div>
+    <div class="meta"><span>Pagu ${esc(rp(pg))}</span><span>Realisasi ${esc(rp(r))}</span><span>Target kas ${esc(pf(k))}</span><span>Fisik ${f==null?'–':esc(pf(Number(f)))}</span></div></div>`}).join(''):'<p class="empty">Belum ada sub kegiatan.</p>';
+  const dn={};for(const d of D){const k=d.dana||'Lainnya';dn[k]=dn[k]||{p:0,r:0};dn[k].p+=Number(d.pagu)||0;dn[k].r+=rd[d.id]||0}
+  $('dana').innerHTML=Object.entries(dn).sort().map(([k,v])=>{const q=pct(v.r,v.p);return `<div class="row"><span class="nm">${esc(k)}</span><span class="pc">${pf(q)}</span><div class="bar${q>100?' over':''}"><i style="width:${Math.min(q,100)}%"></i></div><div class="meta"><span>Pagu ${esc(rp(v.p))}</span><span>Realisasi ${esc(rp(v.r))}</span></div></div>`}).join('');
+  const rec=txs().slice().sort(byNew).slice(0,6);
+  $('recent').innerHTML=rec.length?txHtml(rec,false):'<p class="empty">Belum ada transaksi tercatat untuk TA '+esc(CFG.tahun)+'.</p>';
+  renderSelects();renderTx();renderDpa();renderTarget();renderLap();renderUsers();draw();
+}
+const fmtDate=s=>{const [y,m,d]=String(s||'').split('-');return d?`${Number(d)} ${BLN[Number(m)-1]||''} ${y}`:s};
+function runningSisa(){const o={},acc={};for(const t of txs().slice().sort((a,b)=>-byNew(a,b))){acc[t.dpa]=(acc[t.dpa]||0)+(Number(t.jumlah)||0);o[t.id]=(Number(dpaById(t.dpa)?.pagu)||0)-acc[t.dpa]}return o}
+function txHtml(list,actions){
+  const rs=runningSisa(),a=actions&&canWrite;
+  return `<div class="scroll"><table class="stack"><thead><tr><th>Tanggal</th><th>No. SP2D / bukti</th><th>Jenis</th><th>Sub kegiatan</th><th>Kode rekening</th><th>Uraian belanja</th><th>Penerima</th><th class="num">Jumlah</th><th class="num">Sisa pagu rek.</th>${a?'<th></th>':''}</tr></thead><tbody>${
+  list.map(t=>{const d=dpaById(t.dpa),s=rs[t.id]??0;return `<tr><td style="white-space:nowrap">${esc(fmtDate(t.tanggal))}</td><td>${esc(t.bukti)}</td><td>${esc(t.jenis)}</td><td>${esc(subName(subById(t.sub)))}</td><td><span style="white-space:nowrap">${esc(d?.rek||'?')}</span><br><span class="small muted">${esc(d?.rincian||d?.uraian||'')}</span></td><td>${esc(t.uraian)}</td><td>${esc(t.penerima||'')}</td><td class="num">${esc(N(t.jumlah))}</td><td class="num${s<0?' red':''}">${esc(N(s))}${s<0?' <span class="pill">Lebih</span>':''}</td>${a?`<td><div class="acts"><button class="ghost sm" data-ed="${esc(t.id)}" type="button">Ubah</button><button class="danger sm" data-del="${esc(t.id)}" type="button">Hapus</button></div></td>`:''}</tr>`}).join('')}</tbody></table></div>`;
+}
+function renderBulan(){const el=$('bulan');el.innerHTML=BLNF.map((b,i)=>`<option value="${i+1}">${b} ${esc(CFG.tahun)}</option>`).join('');el.value=String(bulan)}
+function renderSelects(){
+  const o=subs().map(s=>`<option value="${esc(s.id)}">${esc(s.kode)} · ${esc(s.singkat||s.nama)}</option>`).join('');
+  const keep=(id,h)=>{const el=$(id),v=el.value;el.innerHTML=h;if([...el.options].some(x=>x.value===v))el.value=v};
+  keep('t_sub',o);keep('d_sub',o);keep('fSub','<option value="">Semua sub kegiatan</option>'+o);fillDpaSel();
+}
+function fillDpaSel(){
+  const el=$('t_dpa'),v=el.value,rd=realDpa(12);
+  el.innerHTML=dpaOf($('t_sub').value).map(d=>`<option value="${esc(d.id)}">${esc(d.rek)} · ${esc(d.rincian||d.uraian)} (sisa ${esc(N((Number(d.pagu)||0)-(rd[d.id]||0)))})</option>`).join('')||'<option value="">Belum ada rekening</option>';
+  if([...el.options].some(x=>x.value===v))el.value=v;info();
+}
+function info(){
+  const d=dpaById($('t_dpa').value);if(!d){$('txInfo').textContent='';return}
+  const used=sum(txs().filter(t=>t.dpa===d.id&&t.id!==editTx).map(t=>t.jumlah)),sisa=(Number(d.pagu)||0)-used,n=digits($('t_jml').value);
+  $('txInfo').innerHTML=`<span class="muted">${esc(d.uraian)} · ${esc(d.dana)} · Pagu ${esc(rp(d.pagu))} · Sisa ${esc(rp(sisa))}</span>`+(n>sisa?`<br><span class="warn">Jumlah melebihi sisa pagu rekening ini sebesar ${esc(rp(n-sisa))}.</span>`:'');
+}
+function filtered(){
+  const q=$('q').value.trim().toLowerCase(),fs=$('fSub').value,fm=$('fBln').value;
+  return txs().filter(t=>(!fs||t.sub===fs)&&(!fm||mOf(t)===Number(fm))&&(!q||[t.uraian,t.bukti,t.penerima,dpaById(t.dpa)?.rek].join(' ').toLowerCase().includes(q))).sort(byNew);
+}
+function renderTx(){
+  const l=filtered();$('txWrap').hidden=!canWrite;
+  $('txTable').innerHTML=l.length?txHtml(l,true)+`<p class="small" style="text-align:right;margin-top:10px">${l.length} transaksi · Total <b>${esc(rp(sum(l.map(t=>t.jumlah))))}</b></p>`:'<p class="empty">Belum ada transaksi yang cocok.</p>';
+}
+function renderDpa(){
+  $('dpaWrap').hidden=!isAdmin;const rd=realDpa(bulan),a=isAdmin;let h='',gp=0,gr=0;
+  for(const s of subs()){const rows=dpaOf(s.id);const p=sum(rows.map(d=>d.pagu)),r=sum(rows.map(d=>rd[d.id]||0));gp+=p;gr+=r;
+    h+=`<tr class="grp"><td colspan="${a?8:7}">${esc(s.kode)} · ${esc(s.nama)}</td></tr>`+rows.map(d=>{const r=rd[d.id]||0,sisa=(Number(d.pagu)||0)-r;return `<tr><td style="white-space:nowrap">${esc(d.rek)}</td><td>${esc(d.uraian)}<br><span class="small muted">${esc(d.rincian||'')}</span></td><td>${esc(d.dana)}</td><td class="num">${esc(N(d.pagu))}</td><td class="num">${esc(N(r))}</td><td class="num${sisa<0?' red':''}">${esc(N(sisa))}</td><td class="num">${esc(pf(pct(r,d.pagu)))}</td>${a?`<td><div class="acts"><button class="ghost sm" data-ded="${esc(d.id)}" type="button">Ubah</button><button class="danger sm" data-ddel="${esc(d.id)}" type="button">Hapus</button></div></td>`:''}</tr>`}).join('')+
+    `<tr><td></td><td class="muted">Jumlah ${esc(s.singkat||'')}</td><td></td><td class="num"><b>${esc(N(p))}</b></td><td class="num"><b>${esc(N(r))}</b></td><td class="num"><b>${esc(N(p-r))}</b></td><td class="num"><b>${esc(pf(pct(r,p)))}</b></td>${a?'<td></td>':''}</tr>`}
+  $('dpaTable').innerHTML=S.length?`<div class="scroll"><table class="stack"><thead><tr><th>Kode rekening</th><th>Uraian / rincian</th><th>Dana</th><th class="num">Pagu</th><th class="num">Realisasi</th><th class="num">Sisa</th><th class="num">%</th>${a?'<th></th>':''}</tr></thead><tbody>${h}<tr class="tot"><td></td><td>JUMLAH</td><td></td><td class="num">${esc(N(gp))}</td><td class="num">${esc(N(gr))}</td><td class="num">${esc(N(gp-gr))}</td><td class="num">${esc(pf(pct(gr,gp)))}</td>${a?'<td></td>':''}</tr></tbody></table></div>`:'<p class="empty">Belum ada data DPA.</p>';
+}
+function grid(kind,editable){
+  const ss=subs();if(!ss.length)return '<p class="empty">Belum ada sub kegiatan.</p>';
+  const val=(s,i)=>kind==='kas'?(s.kas||[])[i]:(C[s.id]?.[kind]||[])[i];
+  let h=`<div class="scroll"><table class="mgrid"><thead><tr><th>Sub kegiatan</th>${BLN.map(b=>`<th class="num">${b}</th>`).join('')}<th class="num">${kind==='kas'?'Jumlah':'Target'}</th></tr></thead><tbody>`;
+  for(const s of ss){h+=`<tr><td style="white-space:nowrap">${esc(s.singkat||s.nama)}</td>`+BLN.map((b,i)=>{const v=val(s,i),shown=v==null?'':kind==='kas'?N(v):String(v).replace('.',',');
+      return `<td class="num">${editable?`<input data-k="${kind}" data-s="${esc(s.id)}" data-i="${i}" inputmode="decimal" value="${esc(shown)}" aria-label="${esc((s.singkat||s.nama)+' '+BLNF[i])}">`:esc(shown||'–')}</td>`}).join('')+
+    `<td class="num">${kind==='kas'?`${esc(N(sum(s.kas||[])))}${sum(s.kas||[])!==paguSub(s)?'<br><span class="small red">pagu '+esc(N(paguSub(s)))+'</span>':''}`:kind==='keluaran'?esc((s.target??'')+' '+(s.satuan||'')):'100%'}</td></tr>`}
+  if(kind==='kas')h+=`<tr class="tot"><td>JUMLAH</td>${BLN.map((b,i)=>`<td class="num">${esc(N(sum(ss.map(s=>(s.kas||[])[i]))))}</td>`).join('')}<td class="num">${esc(N(sum(ss.map(s=>sum(s.kas||[])))))}</td></tr>`;
+  return h+'</tbody></table></div>';
+}
+function renderTarget(){
+  if(document.activeElement?.closest?.('#v-target'))return;
+  $('kasNote').textContent='Rencana penarikan dana per bulan (sesuai anggaran kas). Jumlah setahun semestinya sama dengan pagu.'+(isAdmin?'':' Hanya admin yang dapat mengubah.');
+  $('kasGrid').innerHTML=grid('kas',isAdmin);$('outGrid').innerHTML=grid('keluaran',canWrite);$('fisGrid').innerHTML=grid('fisik',canWrite);
+}
+$('v-target').addEventListener('change',async e=>{
+  const el=e.target.closest('input[data-k]');if(!el)return;const k=el.dataset.k,sid=el.dataset.s,i=Number(el.dataset.i),raw=el.value.trim();
+  const v=raw===''?null:k==='kas'?digits(raw):Number(raw.replace(/\./g,'').replace(',','.'));if(v!=null&&!isFinite(v)){toast('Isi dengan angka.');return}
+  try{
+    if(k==='kas'){const s=subById(sid);if(!s)return;const kas=(s.kas||Array(12).fill(0)).slice();kas[i]=v||0;s.kas=kas;ok(await sb.from('sub_kegiatan').update({kas}).eq('id',sid))}
+    else{const c=C[sid]||{sub:sid};const arr=(c[k]||Array(12).fill(null)).slice();arr[i]=v;c[k]=arr;C[sid]=c;
+      ok(await sb.from('capaian').upsert({sub:sid,keluaran:c.keluaran||Array(12).fill(null),fisik:c.fisik||Array(12).fill(null)}))}
+    toast('Tersimpan.')}catch(err){fail(err);reload()}
+});
+$('v-target').addEventListener('focusout',()=>setTimeout(()=>{if(!document.activeElement?.closest?.('#v-target'))renderTarget()},50));
+function lapRows(){const prev=realDpa(bulan-1),cur=realDpa(bulan),out=[];for(const s of subs())for(const d of dpaOf(s.id)){const a=prev[d.id]||0,c=cur[d.id]||0;out.push({s,d,a,b:c-a,c,sisa:(Number(d.pagu)||0)-c})}return out}
+function renderLap(){
+  $('lapNote').textContent='Laporan realisasi bulan '+BLNF[bulan-1]+' '+CFG.tahun+' per sub kegiatan dan kode rekening. Ganti bulan di kanan atas.';
+  const rows=lapRows();let h='',cs=null,T={p:0,a:0,b:0,c:0};
+  for(const r of rows){if(r.s!==cs){cs=r.s;h+=`<tr class="grp"><td colspan="7">${esc(r.s.kode)} · ${esc(r.s.nama)}</td></tr>`}
+    T.p+=Number(r.d.pagu)||0;T.a+=r.a;T.b+=r.b;T.c+=r.c;
+    h+=`<tr><td style="white-space:nowrap">${esc(r.d.rek)}</td><td>${esc(r.d.uraian)}</td><td class="num">${esc(N(r.d.pagu))}</td><td class="num">${esc(N(r.a))}</td><td class="num">${esc(N(r.b))}</td><td class="num">${esc(N(r.c))}</td><td class="num${r.sisa<0?' red':''}">${esc(N(r.sisa))}</td></tr>`}
+  $('lapTable').innerHTML=rows.length?`<div class="scroll"><table class="stack"><thead><tr><th>Kode rekening</th><th>Uraian rekening</th><th class="num">Pagu</th><th class="num">s.d. bulan lalu</th><th class="num">Bulan ini</th><th class="num">s.d. bulan ini</th><th class="num">Sisa</th></tr></thead><tbody>${h}<tr class="tot"><td></td><td>JUMLAH (${esc(pf(pct(T.c,T.p)))})</td><td class="num">${esc(N(T.p))}</td><td class="num">${esc(N(T.a))}</td><td class="num">${esc(N(T.b))}</td><td class="num">${esc(N(T.c))}</td><td class="num">${esc(N(T.p-T.c))}</td></tr></tbody></table></div>`:'<p class="empty">Belum ada data DPA.</p>';
+}
+function renderUsers(){
+  $('navUsers').hidden=!isAdmin;if(!isAdmin)return;
+  $('userTable').innerHTML=`<div class="scroll"><table class="stack"><thead><tr><th>Email</th><th>Terdaftar</th><th>Peran</th><th></th></tr></thead><tbody>${U.map(u=>`<tr><td>${esc(u.email)}${u.id===me?.id?' <span class="pill">Anda</span>':''}</td><td>${esc(fmtDate(String(u.dibuat).slice(0,10)))}</td><td><select data-uid="${esc(u.id)}" ${u.id===me?.id?'disabled':''} aria-label="Peran ${esc(u.email)}">${Object.entries(PERAN).map(([k,v])=>`<option value="${k}"${u.peran===k?' selected':''}>${v}</option>`).join('')}</select></td><td>${u.id===me?.id?'':`<button class="danger sm" data-udel="${esc(u.id)}" type="button">Hapus</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+}
+$('userTable').addEventListener('change',async e=>{const s=e.target.closest('select[data-uid]');if(!s)return;try{ok(await sb.from('pengguna').update({peran:s.value}).eq('id',s.dataset.uid));toast('Peran diperbarui.');reload()}catch(err){fail(err)}});
+$('userTable').addEventListener('click',e=>{const b=e.target.closest('[data-udel]');if(b)twoStep(b,async()=>{try{await del('pengguna',b.dataset.udel);toast('Akses pengguna dicabut.')}catch(err){fail(err)}})});
+
+/* ---------- grafik ---------- */
+const svg=$('chart');
+function draw(){
+  const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H)return;
+  const ss=subs(),pagu=sum(D.map(d=>d.pagu)),mon=Array(12).fill(0);for(const t of txs())mon[mOf(t)-1]+=Number(t.jumlah)||0;
+  let c=0,k=0;const cum=mon.map((v,i)=>(c+=v,i<bulan?c:null)),kc=BLN.map((b,i)=>(k+=sum(ss.map(s=>(s.kas||[])[i])),k));
+  const max=Math.max(pagu,c,k,1)*1.08,nar=W<520,L=nar?50:70,R=12,Tp=14,Bt=28,x=i=>L+(i+.5)*(W-L-R)/12,y=v=>Tp+(H-Tp-Bt)*(1-v/max);
+  let g='';
+  for(let j=0;j<=4;j++){const v=max/4*j;g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--rule)"/>`+(nar&&j%2?'':`<text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="12" fill="var(--mute)">${esc(short(v))}</text>`)}
+  BLN.forEach((b,i)=>{if(!nar||i%2===0)g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="12" fill="${i===bulan-1?'var(--ink)':'var(--mute)'}" font-weight="${i===bulan-1?700:400}">${b}</text>`});
+  g+=`<rect x="${x(bulan-1)-(W-L-R)/24}" y="${Tp}" width="${(W-L-R)/12}" height="${H-Tp-Bt}" fill="var(--slate)" opacity=".08"/>`;
+  if(pagu)g+=`<line x1="${L}" x2="${W-R}" y1="${y(pagu)}" y2="${y(pagu)}" stroke="var(--red)" stroke-width="1.5"/>`;
+  g+=`<polyline points="${kc.map((v,i)=>x(i)+','+y(v)).join(' ')}" fill="none" stroke="var(--mute)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  const pts=cum.map((v,i)=>v==null?null:[x(i),y(v),v,i]).filter(Boolean);
+  if(pts.length){g+=`<polyline points="${pts.map(p=>p[0]+','+p[1]).join(' ')}" fill="none" stroke="var(--slate)" stroke-width="3"/>`;
+    pts.forEach(p=>g+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--slate)"><title>s.d. ${BLNF[p[3]]}: ${esc(rp(p[2]))} · target ${esc(rp(kc[p[3]]))}</title></circle>`);
+    const lp=pts[pts.length-1];g+=`<text x="${lp[0]}" y="${lp[1]-10}" text-anchor="${lp[0]>W*.7?'end':'middle'}" font-size="13" font-weight="700" fill="var(--ink)">${esc(short(lp[2]))}</text>`}
+  svg.innerHTML=g;
+}
+const ro=new ResizeObserver(draw);ro.observe($('fig'));
+
+/* ---------- navigasi ---------- */
+const VIEWS=['dasbor','realisasi','dpa','target','laporan','pengguna'];
+function route(){let v=location.hash.slice(1);if(!VIEWS.includes(v)||(v==='pengguna'&&!isAdmin))v='dasbor';VIEWS.forEach(n=>$('v-'+n).hidden=n!==v);document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));if(v==='dasbor')draw()}
+addEventListener('hashchange',route);
+$('bulan').onchange=()=>{bulan=Number($('bulan').value);render()};
+
+/* ---------- form realisasi ---------- */
+$('fBln').innerHTML='<option value="">Semua bulan</option>'+BLNF.map((b,i)=>`<option value="${i+1}">${b}</option>`).join('');
+const money=el=>el.addEventListener('input',()=>{const n=digits(el.value);el.value=n?nf.format(n):'';info()});
+money($('t_jml'));money($('d_pagu'));
+$('t_sub').onchange=fillDpaSel;$('t_dpa').onchange=info;
+function defDate(){const y=Number(CFG.tahun);return y===now.getFullYear()?now.toISOString().slice(0,10):`${y}-${String(bulan).padStart(2,'0')}-01`}
+function resetTx(){editTx=null;const s=$('t_sub').value,d=$('t_dpa').value;$('txForm').reset();$('t_sub').value=s;fillDpaSel();$('t_dpa').value=d;$('t_tgl').value=defDate();$('txTitle').textContent='Catat SP2D / SPJ';$('txCancel').hidden=true;info()}
+$('txCancel').onclick=resetTx;
+$('txForm').onsubmit=async e=>{e.preventDefault();
+  const d=dpaById($('t_dpa').value),n=digits($('t_jml').value);if(!d){toast('Pilih kode rekening.');return}if(!n){toast('Jumlah harus lebih dari 0.');return}
+  if($('t_tgl').value.slice(0,4)!==String(CFG.tahun)){toast('Tanggal harus di tahun anggaran '+CFG.tahun+'.');return}
+  const data={tanggal:$('t_tgl').value,bukti:$('t_bukti').value.trim().slice(0,80),jenis:$('t_jenis').value,sub:$('t_sub').value,dpa:d.id,uraian:$('t_ur').value.trim().slice(0,300),penerima:$('t_pen').value.trim().slice(0,120),jumlah:n};
+  if(editTx)data.diubah=new Date().toISOString();
+  $('txSave').disabled=true;try{await save.realisasi(editTx,data);toast(editTx?'Transaksi diperbarui.':'Transaksi tersimpan.');resetTx();reload()}catch(err){fail(err)}finally{$('txSave').disabled=false}
+};
+function twoStep(btn,go){if(btn.dataset.sure!=='1'){btn.dataset.sure='1';btn.textContent='Yakin?';setTimeout(()=>{btn.dataset.sure='';btn.textContent='Hapus'},3000);return}go()}
+$('txTable').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-ed]'),dl=e.target.closest('[data-del]');
+  if(ed){const t=R.find(x=>x.id===ed.dataset.ed);if(!t)return;editTx=t.id;$('t_tgl').value=t.tanggal;$('t_bukti').value=t.bukti||'';$('t_jenis').value=t.jenis||'GU';$('t_sub').value=t.sub;fillDpaSel();$('t_dpa').value=t.dpa;$('t_ur').value=t.uraian||'';$('t_pen').value=t.penerima||'';$('t_jml').value=N(t.jumlah);
+    $('txTitle').textContent='Ubah transaksi';$('txCancel').hidden=false;info();$('txWrap').scrollIntoView({behavior:'smooth',block:'start'})}
+  if(dl){const t=R.find(x=>x.id===dl.dataset.del);if(!t)return;twoStep(dl,async()=>{try{await del('realisasi',t.id);toast('Transaksi dihapus.',async()=>{await save.realisasi(t.id,{...t});reload()})}catch(err){fail(err)}})}
+});
+['q','fSub','fBln'].forEach(i=>$(i).addEventListener('input',renderTx));
+
+/* ---------- form DPA ---------- */
+function resetD(){editD=null;$('dpaForm').reset();$('dpaTitle').textContent='Tambah baris DPA';$('dpaCancel').hidden=true}
+$('dpaCancel').onclick=resetD;
+$('dpaForm').onsubmit=async e=>{e.preventDefault();
+  const data={sub:$('d_sub').value,rek:$('d_rek').value.trim().slice(0,40),uraian:$('d_ur').value.trim().slice(0,200),rincian:$('d_rin').value.trim().slice(0,300),dana:$('d_dana').value,pagu:digits($('d_pagu').value)};
+  try{await save.dpa(editD,data);toast(editD?'Baris DPA diperbarui.':'Baris DPA ditambahkan.');resetD();reload()}catch(err){fail(err)}
+};
+$('dpaTable').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-ded]'),dl=e.target.closest('[data-ddel]');
+  if(ed){const d=dpaById(ed.dataset.ded);if(!d)return;editD=d.id;$('d_sub').value=d.sub;$('d_rek').value=d.rek;$('d_ur').value=d.uraian;$('d_rin').value=d.rincian||'';$('d_dana').value=d.dana||'PAD';$('d_pagu').value=N(d.pagu);
+    $('dpaTitle').textContent='Ubah baris DPA';$('dpaCancel').hidden=false;$('dpaWrap').scrollIntoView({behavior:'smooth',block:'start'})}
+  if(dl){const d=dpaById(dl.dataset.ddel);if(!d)return;if(R.some(t=>t.dpa===d.id)){toast('Rekening ini sudah punya transaksi; ubah pagunya saja.');return}
+    twoStep(dl,async()=>{try{await del('dpa',d.id);toast('Baris DPA dihapus.',async()=>{await save.dpa(d.id,{...d});reload()})}catch(err){fail(err)}})}
+});
+
+/* ---------- CSV ---------- */
+async function copy(rows){const q=v=>typeof v==='number'?v:'"'+String(v??'').replace(/"/g,'""')+'"';
+  try{await navigator.clipboard.writeText(rows.map(r=>r.map(q).join(',')).join('\n'));toast('CSV disalin — tempel ke Excel.')}catch{toast('Browser menolak akses salin.')}}
+$('copyTx').onclick=()=>copy([['Tanggal','No SP2D/Bukti','Jenis','Kode Sub Kegiatan','Kode Rekening','Uraian Belanja','Penerima','Jumlah']].concat(filtered().map(t=>[t.tanggal,t.bukti,t.jenis,subById(t.sub)?.kode||'',dpaById(t.dpa)?.rek||'',t.uraian,t.penerima||'',Number(t.jumlah)||0])));
+$('copyDpa').onclick=()=>{const rd=realDpa(bulan);copy([['Kode Sub Kegiatan','Kode Rekening','Uraian Rekening','Rincian','Sumber Dana','Pagu','Realisasi','Sisa']].concat(subs().flatMap(s=>dpaOf(s.id).map(d=>[s.kode,d.rek,d.uraian,d.rincian||'',d.dana,Number(d.pagu)||0,rd[d.id]||0,(Number(d.pagu)||0)-(rd[d.id]||0)]))))};
+$('copyLap').onclick=()=>copy([['Kode Sub Kegiatan','Kode Rekening','Uraian','Pagu','s.d. Bulan Lalu','Bulan Ini','s.d. Bulan Ini','Sisa']].concat(lapRows().map(r=>[r.s.kode,r.d.rek,r.d.uraian,Number(r.d.pagu)||0,r.a,r.b,r.c,r.sisa])));
+
+/* ---------- login ---------- */
+let mode='masuk';
+function setMode(m){mode=m;$('authErr').textContent='';$('pwWrap').hidden=m==='reset';$('a_pw').required=m!=='reset';
+  $('authBtn').textContent={masuk:'Masuk',daftar:'Daftar akun',reset:'Kirim tautan atur ulang',baru:'Simpan kata sandi baru'}[m];
+  $('a_pw').autocomplete=m==='masuk'?'current-password':'new-password';$('a_email').parentElement.hidden=m==='baru';$('a_email').required=m!=='baru';
+  $('authAlt').innerHTML=m==='masuk'?'Belum punya akun? <button type="button" class="linkbtn" data-m="daftar">Daftar</button> · <button type="button" class="linkbtn" data-m="reset">Lupa kata sandi</button>':m==='baru'?'':'<button type="button" class="linkbtn" data-m="masuk">Kembali ke masuk</button>';
+  $('gateMsg').textContent={masuk:'Masuk untuk memantau dan mencatat realisasi anggaran.',daftar:'Setelah mendaftar, admin perlu memberi peran sebelum Anda bisa melihat data.',reset:'Masukkan email Anda; kami kirim tautan untuk membuat kata sandi baru.',baru:'Buat kata sandi baru (minimal 8 karakter).'}[m];
+}
+$('authAlt').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(b)setMode(b.dataset.m)});
+$('authForm').onsubmit=async e=>{e.preventDefault();$('authErr').textContent='';$('authBtn').disabled=true;
+  const email=$('a_email').value.trim(),password=$('a_pw').value;
+  try{
+    if(mode==='masuk')ok(await sb.auth.signInWithPassword({email,password}));
+    else if(mode==='daftar'){const d=ok(await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}}));if(!d.session){$('gateMsg').textContent='Pendaftaran berhasil. Buka email Anda dan klik tautan konfirmasi, lalu masuk.';setMode('masuk');$('gateMsg').textContent='Pendaftaran berhasil. Cek email untuk konfirmasi, lalu masuk.'}}
+    else if(mode==='reset'){ok(await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}));setMode('masuk');$('gateMsg').textContent='Tautan atur ulang sudah dikirim ke '+email+'.'}
+    else if(mode==='baru'){ok(await sb.auth.updateUser({password}));toast('Kata sandi diperbarui.');start()}
+  }catch(err){$('authErr').textContent=/Invalid login/i.test(err.message)?'Email atau kata sandi salah.':/already registered/i.test(err.message)?'Email ini sudah terdaftar. Silakan masuk.':err.message}
+  finally{$('authBtn').disabled=false}
+};
+$('logout').onclick=async()=>{await sb.auth.signOut();location.hash='';location.reload()};
+
+let channel=null;
+async function start(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){$('app').hidden=true;$('gate').hidden=false;setMode(mode==='baru'?'baru':'masuk');return}
+  me=session.user;
+  const row=(await sb.from('pengguna').select('peran').eq('id',me.id).maybeSingle()).data;
+  role=row?.peran||'menunggu';isAdmin=role==='admin';canWrite=isAdmin||role==='pencatat';
+  if(role==='menunggu'){$('app').hidden=true;$('gate').hidden=false;$('authForm').hidden=true;
+    $('gateMsg').innerHTML='Anda masuk sebagai <b>'+esc(me.email)+'</b>. Akun Anda menunggu persetujuan admin. Minta admin memberi peran di menu Pengguna, lalu muat ulang halaman ini. <br><br><button type="button" class="ghost" id="out2">Keluar</button>';
+    $('out2').onclick=$('logout').onclick;return}
+  $('gate').hidden=true;$('authForm').hidden=false;$('app').hidden=false;
+  $('whoami').textContent=me.email+' · '+PERAN[role];
+  $('status').innerHTML='<b>● Online</b> · '+(isAdmin?'admin':canWrite?'dapat mencatat':'hanya pantau');
+  route();render();await load().catch(e=>{$('status').textContent='Gagal memuat data: '+(e.message||e)});
+  if(!channel)channel=sb.channel('perubahan').on('postgres_changes',{event:'*',schema:'public'},reload).subscribe();
+}
+
+if(!sb){$('gate').hidden=false;$('authForm').hidden=true;$('gateMsg').innerHTML=configured?'Pustaka Supabase gagal dimuat. Periksa koneksi internet lalu muat ulang.':'Aplikasi belum dihubungkan ke database. Isi <b>SUPABASE_URL</b> dan <b>SUPABASE_ANON_KEY</b> di bagian atas skrip <code>index.html</code> (lihat PANDUAN.md).'}
+else{
+  sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY'){$('app').hidden=true;$('gate').hidden=false;$('authForm').hidden=false;setMode('baru')}});
+  setMode('masuk');start();
+  addEventListener('focus',()=>{if(loaded)reload()});
+}
+}
+</script>
+</body>
+</html>
