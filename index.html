@@ -215,11 +215,11 @@ button.danger{color:var(--red);border-color:var(--red);background:transparent}
 </div>
 <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo" type="button" hidden>Batalkan</button></div>
 
-<script>
+<script type="module">
 {
 /* ======== KONFIGURASI — isi dari Supabase: Project Settings > API ======== */
 const SUPABASE_URL='https://vfzttoulvkqcdimodiuh.supabase.co';
-const SUPABASE_ANON_KEY='TEMPEL_ANON_KEY_DI_SINI';
+const SUPABASE_ANON_KEY=(document.getElementById('anonkey')?.textContent||'').trim();
 /* ======================================================================== */
 
 const $=id=>document.getElementById(id);
@@ -500,3 +500,4 @@ else{
 </script>
 </body>
 </html>
+<script type="text/plain" id="anonkey">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmenR0b3VsdmtxY2RpbW9kaXVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0OTQ3NjYsImV4cCI6MjExMTA3MDc2Nn0.fHcr5s8ubWFiqv1N6tmnM4FpjXQykSCM-ke7p-bDe_8</script>
