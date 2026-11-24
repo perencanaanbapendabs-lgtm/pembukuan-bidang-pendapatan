@@ -1,2 +1,5 @@
-# pembukuan-bidang-pendapatan
-Pembukuan Bidang Pendapatan - monitoring realisasi aggaran Bapenda Kab. Bengkulu Selatan
+# Pembukuan Bidang Pendapatan
+
+Monitoring realisasi anggaran Bidang Perencanaan dan Pengembangan Pendapatan Daerah, Bapenda Kab. Bengkulu Selatan.
+
+Alamat aplikasi: https://perencanaanbapendabs-lgtm.github.io/
