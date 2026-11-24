@@ -464,7 +464,7 @@ $('authAlt').addEventListener('click',e=>{const b=e.target.closest('[data-m]');i
 $('authForm').onsubmit=async e=>{e.preventDefault();$('authErr').textContent='';$('authBtn').disabled=true;
   const email=$('a_email').value.trim(),password=$('a_pw').value;
   try{
-    if(mode==='masuk')ok(await sb.auth.signInWithPassword({email,password}));
+    if(mode==='masuk')ok(await sb.auth.signInWithPassword({email,password}))&&start();
     else if(mode==='daftar'){const d=ok(await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}}));if(d.session){start();return}if(!d.session){$('gateMsg').textContent='Pendaftaran berhasil. Buka email Anda dan klik tautan konfirmasi, lalu masuk.';setMode('masuk');$('gateMsg').textContent='Pendaftaran berhasil. Cek email untuk konfirmasi, lalu masuk.'}}
     else if(mode==='reset'){ok(await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}));setMode('masuk');$('gateMsg').textContent='Tautan atur ulang sudah dikirim ke '+email+'.'}
     else if(mode==='baru'){ok(await sb.auth.updateUser({password}));toast('Kata sandi diperbarui.');start()}
